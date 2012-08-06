@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   applicationComplete="init()">
+		
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import flash.events.*;
+			import flash.net.*;
+			
+			public static const PLAYLIST_URL:String = "http://live.whitmanlocalreport.net:8080/playlist.php";
+			public static const VIDEO_FILE_BASE_URL:String = "http://live.whitmanlocalreport.net:8080/videouploads/";
+			
+			public static const VIDEO_WIDTH:Number = 80;
+			public static const VIDEO_HEIGHT:Number = 60;
+			
+			private var netConnection:NetConnection;
+			private var netStream:NetStream;
+			private var streamName:String = "stream0";
+
+			// Declare the URL Loader
+			private var urlLoader:URLLoader;
+			
+			// Declare the request
+			private var urlRequest:URLRequest;
+			
+			
+			// Runs at launch
+			private function init():void
+			{
+				trace("init");
+				
+			}
+			
+			private function requestPlaylist():void
+			{
+				// Instantiate Loader				
+				urlLoader = new URLLoader();
+				
+				// Register the function that will receive the content
+				urlLoader.addEventListener(Event.COMPLETE, playlistLoaded);
+				
+				// Create the request
+				urlRequest = new URLRequest(PLAYLIST_URL);
+
+				// Make the request
+				try {
+					urlLoader.load(urlRequest);
+				} catch (error:Error) {
+					trace("Unable to load requested document.");
+				}		
+				trace("Should have loaded");
+			}
+			
+			public function playlistLoaded(event:Event):void
+			{
+				trace("Loaded: " + urlLoader.data);            
+				
+				// Parse the playlist
+				/*
+				[
+				{"video_id":"1","video_file":"1344265332_2195_videocapture95696484.3gp","video_ts":"2012-08-06 15:02:12","participant_id":"1","performance_id":"1"},
+				{"video_id":"2","video_file":"1344265335_5541_videocapture95696484.3gp","video_ts":"2012-08-06 15:02:15","participant_id":"1","performance_id":"1"},
+				{"video_id":"3","video_file":"1344265349_3194_videocapture95696484.3gp","video_ts":"2012-08-06 15:02:29","participant_id":"1","performance_id":"1"}
+				]				
+				*/
+				var playlist:Array = (JSON.parse(urlLoader.data) as Array);
+				for(var i:int = 0; i < playlist.length; i++) {
+					trace(playlist[i].video_id);
+				}
+
+				
+			}			
+			
+		]]>
+	</fx:Script>
+	
+	<mx:VideoDisplay id="remoteVideoDisplay" x="0" y="0" width="160" height="120" visible="true" />
+			
+</s:WindowedApplication>
