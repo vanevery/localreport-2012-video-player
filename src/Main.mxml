@@ -50,6 +50,7 @@
 				netConnection = new NetConnection();
 				netConnection.connect(null);
 				netStream = new NetStream(netConnection);
+				netStream.client = this;
 				video = new Video();
 				video.x = 0;
 				video.y = 0;
@@ -59,6 +60,10 @@
 				uic.addChild(video);
 				
 				requestPlaylist();
+			}
+			
+			public function onMetaData(infoObject:Object):void {
+				trace("metadata");
 			}
 			
 			private function requestPlaylist():void
@@ -96,7 +101,7 @@
 				var newPlaylist:Array = (JSON.decode(urlLoader.data) as Array);
 				for(var i:int = 0; i < newPlaylist.length; i++) {
 					trace(newPlaylist[i].video_id);
-					playlist.concat(newPlaylist[i]);
+					playlist.push(newPlaylist[i]);
 				}
 
 				for(var j:int = 0; j < playlist.length; j++) {
