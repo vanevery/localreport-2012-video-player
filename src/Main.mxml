@@ -10,6 +10,8 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.adobe.serialization.json.JSON;
+			
 			import flash.events.*;
 			import flash.net.*;
 			
@@ -21,8 +23,18 @@
 			
 			private var netConnection:NetConnection;
 			private var netStream:NetStream;
-			private var streamName:String = "stream0";
-
+			private var video:Video;
+			private var streamName:String;
+			
+			private var currentVideoId = -1;
+			private var currentVideoIndex = -1;
+			private var playlist:Array = new Array();
+			
+			public static const INIT:Number = 0;
+			public static const PLAYING:Number = 1;
+			public static const WAITING:Number = 2;
+			private var playState = INIT;
+			
 			// Declare the URL Loader
 			private var urlLoader:URLLoader;
 			
@@ -35,6 +47,18 @@
 			{
 				trace("init");
 				
+				netConnection = new NetConnection();
+				netConnection.connect(null);
+				netStream = new NetStream(netConnection);
+				video = new Video();
+				video.x = 0;
+				video.y = 0;
+				video.width = VIDEO_WIDTH;
+				video.height = VIDEO_HEIGHT;
+				video.attachNetStream(netStream);
+				uic.addChild(video);
+				
+				requestPlaylist();
 			}
 			
 			private function requestPlaylist():void
@@ -46,7 +70,7 @@
 				urlLoader.addEventListener(Event.COMPLETE, playlistLoaded);
 				
 				// Create the request
-				urlRequest = new URLRequest(PLAYLIST_URL);
+				urlRequest = new URLRequest(PLAYLIST_URL + "?last_video_id="+currentVideoId);
 
 				// Make the request
 				try {
@@ -69,17 +93,32 @@
 				{"video_id":"3","video_file":"1344265349_3194_videocapture95696484.3gp","video_ts":"2012-08-06 15:02:29","participant_id":"1","performance_id":"1"}
 				]				
 				*/
-				var playlist:Array = (JSON.parse(urlLoader.data) as Array);
-				for(var i:int = 0; i < playlist.length; i++) {
-					trace(playlist[i].video_id);
+				var newPlaylist:Array = (JSON.decode(urlLoader.data) as Array);
+				for(var i:int = 0; i < newPlaylist.length; i++) {
+					trace(newPlaylist[i].video_id);
+					playlist.concat(newPlaylist[i]);
 				}
 
+				for(var j:int = 0; j < playlist.length; j++) {
+					trace(playlist[j].video_id);
+				}
 				
-			}			
+				if (playState != PLAYING) {
+					playNextVideo();
+				}
+			}	
+			
+			private function playNextVideo():void {
+				if (currentVideoIndex < (playlist.length - 2)) {
+					currentVideoIndex++;
+					trace("Going to play: " + VIDEO_FILE_BASE_URL + playlist[currentVideoIndex].video_file);
+					netStream.play(VIDEO_FILE_BASE_URL + playlist[currentVideoIndex].video_file);
+				}
+			}
 			
 		]]>
 	</fx:Script>
 	
-	<mx:VideoDisplay id="remoteVideoDisplay" x="0" y="0" width="160" height="120" visible="true" />
+	<mx:UIComponent id="uic" />
 			
 </s:WindowedApplication>
