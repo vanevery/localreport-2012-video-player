@@ -26,14 +26,18 @@
 			private var video:Video;
 			private var streamName:String;
 			
-			private var currentVideoId = -1;
-			private var currentVideoIndex = -1;
+			private var currentVideoIndex:Number = -1;
 			private var playlist:Array = new Array();
+			private var playlistTimer:Timer;
+			private var playlistRequestPending:Boolean = false;
+			
+			private var currentVideoMetadata:Object;
+			private var currentVideoPlayTimer:Timer;
 			
 			public static const INIT:Number = 0;
 			public static const PLAYING:Number = 1;
 			public static const WAITING:Number = 2;
-			private var playState = INIT;
+			private var playState:Number = INIT;
 			
 			// Declare the URL Loader
 			private var urlLoader:URLLoader;
@@ -59,15 +63,66 @@
 				video.attachNetStream(netStream);
 				uic.addChild(video);
 				
+				currentVideoPlayTimer = new Timer(500,0);
+				currentVideoPlayTimer.addEventListener(TimerEvent.TIMER, checkPlayback);				
+				
+				playlistTimer = new Timer(1000,0);
+				playlistTimer.addEventListener(TimerEvent.TIMER, playlistTimerFired);
 				requestPlaylist();
+				playlistTimer.start();
 			}
 			
 			public function onMetaData(infoObject:Object):void {
 				trace("metadata");
+				currentVideoMetadata = infoObject;
+				video.width = infoObject.width;
+				video.height = infoObject.height;
+				
+				currentVideoPlayTimer.start();
+				/*
+				var key:String;
+				for(key in infoObject){
+					trace(key+": "+infoObject[key]);
+				}
+				*/
+			}
+
+			public function checkPlayback(e:TimerEvent):void {
+				trace("Checking playback");
+				if (netStream.time >= currentVideoMetadata.duration - .1) {
+					trace("Video Done");
+					currentVideoPlayTimer.stop();
+					playNextVideo();
+				}
+			}
+			
+			private function netStatusHandler(event : NetStatusEvent) : void {
+				trace(event.info.code);
+				switch(event.info.code) {
+					case "NetConnection.Connect.Success":
+						trace("Loaded stream");
+						break;
+					case "NetStream.Play.StreamNotFound":
+						trace("Stream not found");
+						break;
+					case "NetStream.Play.Stop":
+						trace("Stream stopped");
+						break;
+					default:
+				}
+			}
+			
+			public function playlistTimerFired(e:TimerEvent):void
+			{
+				if (playState == WAITING && !playlistRequestPending) {
+					requestPlaylist();
+				}
 			}
 			
 			private function requestPlaylist():void
 			{
+				playlistRequestPending = true;
+				
 				// Instantiate Loader				
 				urlLoader = new URLLoader();
 				
@@ -75,7 +130,11 @@
 				urlLoader.addEventListener(Event.COMPLETE, playlistLoaded);
 				
 				// Create the request
-				urlRequest = new URLRequest(PLAYLIST_URL + "?last_video_id="+currentVideoId);
+				var videoId:Number = -1;
+				if (currentVideoIndex >= 0) {
+					videoId = playlist[currentVideoIndex].video_id;
+				}
+				urlRequest = new URLRequest(PLAYLIST_URL + "?last_video_id=" + videoId);
 
 				// Make the request
 				try {
@@ -99,9 +158,11 @@
 				]				
 				*/
 				var newPlaylist:Array = (JSON.decode(urlLoader.data) as Array);
-				for(var i:int = 0; i < newPlaylist.length; i++) {
-					trace(newPlaylist[i].video_id);
-					playlist.push(newPlaylist[i]);
+				if (newPlaylist != null) {
+					for(var i:int = 0; i < newPlaylist.length; i++) {
+						trace(newPlaylist[i].video_id);
+						playlist.push(newPlaylist[i]);
+					}
 				}
 
 				for(var j:int = 0; j < playlist.length; j++) {
@@ -111,6 +172,8 @@
 				if (playState != PLAYING) {
 					playNextVideo();
 				}
+				
+				playlistRequestPending = false;
 			}	
 			
 			private function playNextVideo():void {
@@ -118,6 +181,9 @@
 					currentVideoIndex++;
 					trace("Going to play: " + VIDEO_FILE_BASE_URL + playlist[currentVideoIndex].video_file);
 					netStream.play(VIDEO_FILE_BASE_URL + playlist[currentVideoIndex].video_file);
+				} else {
+					trace("Waiting for more videos");
+					playState = WAITING;
 				}
 			}
 			
