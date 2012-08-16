@@ -55,14 +55,13 @@
 				screens = Screen.screens;
 				
 				var windowInitOptions:NativeWindowInitOptions = new NativeWindowInitOptions();
-				/*
 				windowInitOptions.type = NativeWindowType.NORMAL;
 				windowInitOptions.minimizable = true;
 				windowInitOptions.resizable = true;
 				windowInitOptions.maximizable = true;
 				windowInitOptions.systemChrome = NativeWindowSystemChrome.STANDARD;
 				windowInitOptions.transparent = false;
-				*/
+
 				for(var i:uint; i<screens.length; i++) {
 					trace(Screen(screens[i]).bounds);
 					var nativeWindow:NativeWindow = new NativeWindow(windowInitOptions);
@@ -81,8 +80,6 @@
 				
 				// Have to have at least one
 				//nativeWindows[0].stage.addChild(uic_0);
-				
-				
 			}
 			
 			// Runs at launch
@@ -139,7 +136,6 @@
 				trace("Video Width: " + video.width);
 				trace("Video Height: " + video.height);
 				trace("Resize Factor: " + resizeFactor);
-				
 				
 				video.width = video.width * resizeFactor;
 				video.height = video.height * resizeFactor;
@@ -264,12 +260,39 @@
 				}
 			}
 			
+			private function playPreviousVideo():void {
+				if (currentVideoIndex > 0 && playlist.length > 0) {
+					currentVideoIndex--;
+					trace("Going to play: " + VIDEO_FILE_BASE_URL + playlist[currentVideoIndex].video_file);
+					netStream.play(VIDEO_FILE_BASE_URL + playlist[currentVideoIndex].video_file);
+				} else {
+					trace("No previous videos");
+					playState = WAITING;
+				}
+			}
+			
+			private function makeFullScreen():void 			{
+				if (stage.displayState == StageDisplayState.FULL_SCREEN || stage.displayState == StageDisplayState.FULL_SCREEN_INTERACTIVE) 
+				{
+					nativeWindows[0].stage.displayState = StageDisplayState.NORMAL;
+					trace("Make Normal");	
+					fullscreenbutton.label = "Fullscreen";
+				}
+				else if (stage.displayState == StageDisplayState.NORMAL)
+				{
+					//nativeWindows[0].stage.fullScreenSourceRect = new Rectangle(0,0,800,600);
+					nativeWindows[0].stage.displayState = StageDisplayState.FULL_SCREEN_INTERACTIVE;
+					trace("Make Fullscreen");	
+					fullscreenbutton.label = "Normal";
+				}
+			}
+
+			
 		]]>
 	</fx:Script>
+		
+	<mx:Button x="10" y="10" label="Previous" id="previous_button" click="playPreviousVideo()"/>
+	<mx:Button x="60" y="10" label="Next" id="next_button" click="playNextVideo()"/>
+	<mx:Button label="Fullscreen" click="makeFullScreen()" x="10" y="40" id="fullscreenbutton" enabled="true"/>
 	
-	<mx:UIComponent id="uic_0" />
-	<mx:UIComponent id="uic_1" />
-	<mx:UIComponent id="uic_2" />
-	<mx:UIComponent id="uic_3" />
-	<mx:UIComponent id="uic_4" />			
 </s:WindowedApplication>
