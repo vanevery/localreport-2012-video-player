@@ -27,7 +27,7 @@
 			private var streamName:String;
 			
 			// From Server
-			private var videoId:Number = -1;
+			private var videoId:Number = 57;
 
 			private var currentVideoIndex:Number = -1;
 			private var playlist:Array = new Array();
@@ -79,7 +79,7 @@
 				}
 				
 				// Have to have at least one
-				//nativeWindows[0].stage.addChild(uic_0);
+				//nativeWindows[1].stage.addChild(uic_0);
 			}
 			
 			// Runs at launch
@@ -95,14 +95,18 @@
 				netStream.client = this;
 				video = new Video();
 				video.attachNetStream(netStream);
-
+				
+				var soundTransform:SoundTransform = new SoundTransform();
+				soundTransform.volume = 0;
+				netStream.soundTransform = soundTransform;				
+				
 				video.x = 0;
 				video.y = 0;
 				video.width = VIDEO_WIDTH;
 				video.height = VIDEO_HEIGHT;
 
 				//uic_0.addChild(video);
-				nativeWindows[0].stage.addChild(video);
+				nativeWindows[1].stage.addChild(video);
 				
 				currentVideoPlayTimer = new Timer(500,0);
 				currentVideoPlayTimer.addEventListener(TimerEvent.TIMER, checkPlayback);				
@@ -128,10 +132,10 @@
 				
 				// Make sure it fits on the screen
 				var resizeFactor:Number = 1;
-				if (video.width > nativeWindows[0].width && video.width - nativeWindows[0].width > video.height - nativeWindows[0].height) {
-					resizeFactor = nativeWindows[0].width/video.width;
-				} else if (video.height > nativeWindows[0].height) {
-					resizeFactor = nativeWindows[0].height/video.height;
+				if (video.width > nativeWindows[1].width && video.width - nativeWindows[1].width > video.height - nativeWindows[1].height) {
+					resizeFactor = nativeWindows[1].width/video.width;
+				} else if (video.height > nativeWindows[1].height) {
+					resizeFactor = nativeWindows[1].height/video.height;
 				}
 				trace("Video Width: " + video.width);
 				trace("Video Height: " + video.height);
@@ -140,10 +144,10 @@
 				video.width = video.width * resizeFactor;
 				video.height = video.height * resizeFactor;
 				
-				trace("x math: " + (nativeWindows[0].width - video.width)/2);
-				trace("y math: " + (nativeWindows[0].height - video.height)/2);
-				video.x = (nativeWindows[0].width - video.width)/2;
-				video.y = (nativeWindows[0].height - video.height)/2;
+				trace("x math: " + (nativeWindows[1].width - video.width)/2);
+				trace("y math: " + (nativeWindows[1].height - video.height)/2);
+				video.x = (nativeWindows[1].width - video.width)/2;
+				video.y = (nativeWindows[1].height - video.height)/2;
 				
 				currentVideoPlayTimer.start();
 				
@@ -274,14 +278,14 @@
 			private function makeFullScreen():void 			{
 				if (stage.displayState == StageDisplayState.FULL_SCREEN || stage.displayState == StageDisplayState.FULL_SCREEN_INTERACTIVE) 
 				{
-					nativeWindows[0].stage.displayState = StageDisplayState.NORMAL;
+					nativeWindows[1].stage.displayState = StageDisplayState.NORMAL;
 					trace("Make Normal");	
 					fullscreenbutton.label = "Fullscreen";
 				}
 				else if (stage.displayState == StageDisplayState.NORMAL)
 				{
-					//nativeWindows[0].stage.fullScreenSourceRect = new Rectangle(0,0,800,600);
-					nativeWindows[0].stage.displayState = StageDisplayState.FULL_SCREEN_INTERACTIVE;
+					//nativeWindows[1].stage.fullScreenSourceRect = new Rectangle(0,0,800,600);
+					nativeWindows[1].stage.displayState = StageDisplayState.FULL_SCREEN_INTERACTIVE;
 					trace("Make Fullscreen");	
 					fullscreenbutton.label = "Normal";
 				}
