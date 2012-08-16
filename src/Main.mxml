@@ -26,6 +26,9 @@
 			private var video:Video;
 			private var streamName:String;
 			
+			// From Server
+			private var videoId:Number = -1;
+
 			private var currentVideoIndex:Number = -1;
 			private var playlist:Array = new Array();
 			private var playlistTimer:Timer;
@@ -45,23 +48,64 @@
 			// Declare the request
 			private var urlRequest:URLRequest;
 			
+			private var screens:Array;
+			private var nativeWindows:Array = new Array();
+			private function initScreens():void
+			{
+				screens = Screen.screens;
+				
+				var windowInitOptions:NativeWindowInitOptions = new NativeWindowInitOptions();
+				/*
+				windowInitOptions.type = NativeWindowType.NORMAL;
+				windowInitOptions.minimizable = true;
+				windowInitOptions.resizable = true;
+				windowInitOptions.maximizable = true;
+				windowInitOptions.systemChrome = NativeWindowSystemChrome.STANDARD;
+				windowInitOptions.transparent = false;
+				*/
+				for(var i:uint; i<screens.length; i++) {
+					trace(Screen(screens[i]).bounds);
+					var nativeWindow:NativeWindow = new NativeWindow(windowInitOptions);
+					nativeWindow.width = Screen(screens[i]).bounds.width;
+					nativeWindow.height = Screen(screens[i]).bounds.height;
+					nativeWindow.stage.displayState = StageDisplayState.FULL_SCREEN_INTERACTIVE;
+					//nativeWindow.alwaysInFront = true;
+					
+					nativeWindow.stage.align = "TL"; 
+					nativeWindow.stage.scaleMode = "noScale"; 
+					
+					nativeWindow.activate();
+					
+					nativeWindows.push(nativeWindow);
+				}
+				
+				// Have to have at least one
+				//nativeWindows[0].stage.addChild(uic_0);
+				
+				
+			}
 			
 			// Runs at launch
 			private function init():void
 			{
 				trace("init");
 				
+				initScreens();
+				
 				netConnection = new NetConnection();
 				netConnection.connect(null);
 				netStream = new NetStream(netConnection);
 				netStream.client = this;
 				video = new Video();
+				video.attachNetStream(netStream);
+
 				video.x = 0;
 				video.y = 0;
 				video.width = VIDEO_WIDTH;
 				video.height = VIDEO_HEIGHT;
-				video.attachNetStream(netStream);
-				uic.addChild(video);
+
+				//uic_0.addChild(video);
+				nativeWindows[0].stage.addChild(video);
 				
 				currentVideoPlayTimer = new Timer(500,0);
 				currentVideoPlayTimer.addEventListener(TimerEvent.TIMER, checkPlayback);				
@@ -75,16 +119,50 @@
 			public function onMetaData(infoObject:Object):void {
 				trace("metadata");
 				currentVideoMetadata = infoObject;
-				video.width = infoObject.width;
-				video.height = infoObject.height;
+				
+				// Make sure it's dimensions are sane
+				if (infoObject.width < 10000 && infoObject.height < 10000) {
+					video.width = infoObject.width;
+					video.height = infoObject.height;
+				} else {
+					video.width = 640;
+					video.height = 480;
+				}
+				
+				// Make sure it fits on the screen
+				var resizeFactor:Number = 1;
+				if (video.width > nativeWindows[0].width && video.width - nativeWindows[0].width > video.height - nativeWindows[0].height) {
+					resizeFactor = nativeWindows[0].width/video.width;
+				} else if (video.height > nativeWindows[0].height) {
+					resizeFactor = nativeWindows[0].height/video.height;
+				}
+				trace("Video Width: " + video.width);
+				trace("Video Height: " + video.height);
+				trace("Resize Factor: " + resizeFactor);
+				
+				
+				video.width = video.width * resizeFactor;
+				video.height = video.height * resizeFactor;
+				
+				trace("x math: " + (nativeWindows[0].width - video.width)/2);
+				trace("y math: " + (nativeWindows[0].height - video.height)/2);
+				video.x = (nativeWindows[0].width - video.width)/2;
+				video.y = (nativeWindows[0].height - video.height)/2;
 				
 				currentVideoPlayTimer.start();
-				/*
+				
 				var key:String;
 				for(key in infoObject){
 					trace(key+": "+infoObject[key]);
 				}
-				*/
+				
+			}
+			
+			public function onPlayStatus(infoObject:Object):void {
+				var key:String;
+				for(key in infoObject){
+					trace(key+": "+infoObject[key]);
+				}
 			}
 
 			public function checkPlayback(e:TimerEvent):void {
@@ -130,7 +208,6 @@
 				urlLoader.addEventListener(Event.COMPLETE, playlistLoaded);
 				
 				// Create the request
-				var videoId:Number = -1;
 				if (currentVideoIndex >= 0) {
 					videoId = playlist[currentVideoIndex].video_id;
 				}
@@ -190,6 +267,9 @@
 		]]>
 	</fx:Script>
 	
-	<mx:UIComponent id="uic" />
-			
+	<mx:UIComponent id="uic_0" />
+	<mx:UIComponent id="uic_1" />
+	<mx:UIComponent id="uic_2" />
+	<mx:UIComponent id="uic_3" />
+	<mx:UIComponent id="uic_4" />			
 </s:WindowedApplication>
